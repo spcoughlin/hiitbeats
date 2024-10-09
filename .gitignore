@@ -167,3 +167,6 @@ src/backend/api_creds.json
 src/backend/build.sbt
 src/backend/project/
 src/backend/target/
+.metals/
+.scala-build/
+.bsp/
