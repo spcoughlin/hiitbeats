@@ -170,3 +170,5 @@ src/backend/target/
 .metals/
 .scala-build/
 .bsp/
+src/backend/.bloop/
+src/backend/.metals/

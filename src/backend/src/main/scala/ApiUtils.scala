@@ -1,3 +1,5 @@
+package HiitBeats
+
 import java.util.Base64
 import play.api.libs.json._
 import scala.annotation.tailrec
@@ -7,10 +9,15 @@ import sttp.client4._
 import sttp.client4.httpclient.HttpClientSyncBackend
 import sttp.model.Uri
 
-object ApiUtils {
 
-  // Case class to store what we want from a Spotify Song
-  case class Song(name: String, artist: String, duration: Int, uri: String)
+// Case class to store what we want from a Spotify Song
+case class Song(name: String, 
+                artist: String, 
+                duration: Int, 
+                uri: String)
+
+
+object ApiUtils {
 
   /* Gets the authentication token from the Spotify API
    * No args, returns String
@@ -99,12 +106,48 @@ object ApiUtils {
     }
   }
 
-  def main(args: Array[String]): Unit = {
-    val token: String = getToken match {
-      case Success(token) => token
-      case Failure(exception) => throw exception 
+  /* Fills a workout with intervals and rest, starting with rest period
+   * Takes intLength: Int, restLength: Int, totalLength: Int
+   * Returns List[Int]
+   */
+  def fillWorkout(intLength: Int, restLength: Int, totalLength: Int): List[Int] = {
+    @tailrec
+    def fillWorkoutHelper(intLength: Int, restLength: Int, totalLength: Int, acc: List[Int]): List[Int] = {
+      if (totalLength <= 0) acc
+      else if (totalLength - intLength <= 0) acc :+ totalLength
+      else fillWorkoutHelper(intLength, restLength, totalLength - intLength - restLength, acc :+ (restLength * 60000) :+ (intLength * 60000))
     }
-    val songs = findSongs(token)
-    songs.foreach(println)
+    fillWorkoutHelper(intLength, restLength, totalLength, List())
+  }  
+  
+  /* Matches songs to a workout and returns the "uris" string needed to add to playlist
+   * Takes workout: List[Int], songs: List[Song]
+   * Returns String
+   */
+  def matchSongs(workout: List[Int], songs: List[Song]): String = {
+    def getClosestSong(interval: Int, songs: List[Song]): Song = {
+      songs.minBy(s => Math.abs(s.duration - interval))
+    }
+    @tailrec
+    def matchSongsHelper(workout: List[Int], songs: List[Song], acc: String): String = {
+      workout match {
+        case Nil => acc
+        case interval :: rest => 
+          val closestSong = getClosestSong(interval, songs)
+          println(s"Matching ${interval.toFloat/60000.00} to ${closestSong.name} by ${closestSong.artist} of length ${closestSong.duration.toFloat / 60000.00}")
+          matchSongsHelper(rest, songs.filterNot(_ == closestSong), acc + closestSong.uri + ",")
+      }
+    }
+    matchSongsHelper(workout, songs, "").stripSuffix(",")
   }
 }
+
+
+
+
+
+
+
+
+
+
