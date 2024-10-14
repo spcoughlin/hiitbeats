@@ -1,8 +1,13 @@
 package HiitBeats
 
+import cats.effect.IO
+import cats.effect.IOApp
+import cats.effect.unsafe.implicits.global
 import java.util.Base64
 import play.api.libs.json._
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Promise}
 import scala.io.Source
 import scala.util.{Try, Success, Failure}
 import sttp.client4._
@@ -29,6 +34,7 @@ object ApiUtils {
     val lines = Source.fromFile(file).getLines.toArray
     val clientId = lines(0)
     val clientSecret = lines(1)
+    Source.fromFile(file).close()
     
     // Set up the request
     val base64Auth = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes)
@@ -139,6 +145,88 @@ object ApiUtils {
       }
     }
     matchSongsHelper(workout, songs, "").stripSuffix(",")
+  }
+
+  // Returns the login link for the user to log in
+  def getLoginLink(): String = {
+    // read our shit from the file
+    val file = "/Users/seancoughlin/projects/hiitbeats/src/backend/api_creds.txt"
+    val lines = Source.fromFile(file).getLines.toArray
+    val clientId = lines(0)
+    val clientSecret = lines(1)
+    val redirectUri = lines(2)
+    Source.fromFile(file).close()
+
+    // build and return the link
+    val scopes = "user-read-private user-read-email"
+    val state = "no-crossrefs"
+    s"https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=$scopes&state=$state"
+  }
+
+  // logs in the user, redirects to the redirect link, and returns the auth code 
+  def getAuthCode(loginLink: String): Future[String] = {
+        // Step 1: Print the login link for the user
+    println(s"Log in using this link: $loginLink")
+
+    // Step 2: Run the AuthListener server (this is non-blocking and will run in the background)
+    AuthListener.run(List.empty).unsafeRunAndForget()
+    
+    // Step 3: Set up a promise that will eventually hold the auth code
+    val promise = Promise[String]()
+
+    // Step 4: Use a Future to capture the auth code once available
+    Future {
+      // `captureAuthCode()` returns an `IO[String]`, we need to convert it to a Future
+      val authCodeIO: IO[String] = AuthListener.captureAuthCode()
+
+      // Convert the IO to a Scala Future
+      val authCodeFuture: Future[String] = authCodeIO.unsafeToFuture()
+
+      // When the auth code is ready, complete the promise
+      authCodeFuture.onComplete {
+        case scala.util.Success(authCode) =>
+          promise.success(authCode)  // Fulfill the promise with the auth code
+        case scala.util.Failure(ex) =>
+          promise.failure(ex)  // Handle any failure in getting the auth code
+      }
+    }
+
+    // Return the Future that will hold the auth code
+    promise.future
+  }
+
+  // Exchanges the auth code for an access token
+  def exchangeAuthCodeForToken(authCode: String): String = {
+    // Read the client id and secret from a file
+    val file = "/Users/seancoughlin/projects/hiitbeats/src/backend/api_creds.txt"
+    val lines = Source.fromFile(file).getLines.toArray
+    val clientId = lines(0)
+    val clientSecret = lines(1)
+    Source.fromFile(file).close()
+
+    // Set up the request
+    val base64Auth = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes)
+    val authHeader = Map("Authorization" -> s"Basic $base64Auth")
+    val authBody = Map("grant_type" -> "authorization_code", "code" -> authCode, "redirect_uri" -> "http://localhost:9000/spotify/callback")
+    val backend = HttpClientSyncBackend()
+
+    // Send the request
+    val response = basicRequest
+      .post(uri"https://accounts.spotify.com/api/token")
+      .headers(authHeader)
+      .body(authBody)
+      .send(backend)
+    backend.close()
+
+    // Parse the response
+    val jsonString = response.body match {
+      case Left(value) => value
+      case Right(value) => value
+    }
+    val json = Json.parse(jsonString)
+
+    // Extract the token from the response
+    (json \ "access_token").as[String]
   }
 }
 
