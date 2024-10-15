@@ -1,5 +1,7 @@
 package HiitBeats
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Base64
 import play.api.libs.json._
 import scala.annotation.tailrec
@@ -20,77 +22,32 @@ case class Song(name: String,
                 duration: Int, 
                 uri: String)
 
+// Object to hold the Spotify API functions
+object ApiUtils extends SpotifyApi {
 
-object ApiUtils {
-
-  /* Gets the authentication token for searching and putting songs from the Spotify API
-   * No args, returns String
-   */
-  def getClientToken: Try[String] = Try {
-
-    // Read the client id and secret from a file
-    val file = "/Users/seancoughlin/projects/hiitbeats/src/backend/api_creds.txt"
-    val lines = Source.fromFile(file).getLines.toArray
-    val clientId = lines(0)
-    val clientSecret = lines(1)
-    Source.fromFile(file).close()
-    
-    // Set up the request
+  override def getClientToken: Try[String] = Try {
+    val (clientId, clientSecret) = getCredentials("/Users/seancoughlin/projects/hiitbeats/src/backend/api_creds.txt")
     val base64Auth = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes)
-    val authHeader = Map("Authorization" -> s"Basic $base64Auth")
-    val authBody = Map("grant_type" -> "client_credentials")
-    val backend = HttpClientSyncBackend()
-    
-    // Send the request
-    val response = basicRequest
-      .post(uri"https://accounts.spotify.com/api/token")
-      .headers(authHeader)
-      .body(authBody)
-      .send(backend)
-    backend.close()
+    val headers = Map(
+      "Authorization" -> s"Basic $base64Auth",
+      "Content-Type" -> "application/x-www-form-urlencoded"
+    )
+    val body = "grant_type=client_credentials"
 
-    // Parse the response
-    val jsonString = response.body match {
-      case Left(value) => value
-      case Right(value) => value
-    }
-    val json = Json.parse(jsonString)
-
-    // Extract the token from the response
+    val response = makeRequest(uri"https://accounts.spotify.com/api/token", headers, Some(body)).get
+    val json = parseJson(response)
     (json \ "access_token").as[String]
-
   }
 
-  /* Gets the songs data from the Spotify API
-   * Takes a token: String, returns List[Song]
-   */
-  def findSongs(token : String): List[Song] = {
+  override def findSongs(token: String, query: String): List[Song] = {
+    val headers = Map("Authorization" -> s"Bearer $token")
+    val params = Map("q" -> query, "limit" -> "50", "type" -> "track")
+    val uriWithParams: Uri = uri"https://api.spotify.com/v1/search".params(params)
 
-    // Set up the request
-    val header = Map("Authorization" -> s"Bearer $token")
-    val params = Map("q" -> "kanye", "limit" -> "50", "type" -> "track")
-    val uriWithParams: Uri = uri"https://api.spotify.com/v1/search"
-      .params(params)
-    val backend = HttpClientSyncBackend()
-
-    // Send the request
-    val response = basicRequest
-      .get(uriWithParams)
-      .headers(header)
-      .send(backend)
-    backend.close()
-
-    // Parse the response
-    val jsonString = response.body match {
-      case Left(value) => value
-      case Right(value) => value
-    }
-    val json = Json.parse(jsonString)
-
-    // Extract the songs from the response
+    val response = makeRequest(uriWithParams, headers).get
+    val json = parseJson(response)
     val rawSongs: Option[JsArray] = (json \ "tracks" \ "items").asOpt[JsArray]
 
-    // Helper function to convert a value to a Song
     def tuplize(e: JsValue): Song = {
       val name: Option[String] = (e \ "name").asOpt[String]
       val artist: Option[String] = (e \ "artists")(0) \ "name" match {
@@ -104,18 +61,14 @@ object ApiUtils {
         case _ => Song("Error", "Error", 0, "Error")
       }
     }
-    // map the rawSongs to a list of Songs and return
+
     rawSongs match {
       case Some(songs) => songs.value.toList.map(e => tuplize(e))
       case None => List(Song("Error", "Error", 0, "Error"))
     }
   }
 
-  /* Fills a workout with intervals and rest, starting with rest period
-   * Takes intLength: Int, restLength: Int, totalLength: Int
-   * Returns List[Int]
-   */
-  def fillWorkout(intLength: Int, restLength: Int, totalLength: Int): List[Int] = {
+  override def fillWorkout(intLength: Int, restLength: Int, totalLength: Int): List[Int] = {
     @tailrec
     def fillWorkoutHelper(intLength: Int, restLength: Int, totalLength: Int, acc: List[Int]): List[Int] = {
       if (totalLength <= 0) acc
@@ -125,11 +78,7 @@ object ApiUtils {
     fillWorkoutHelper(intLength, restLength, totalLength, List())
   }  
   
-  /* Matches songs to a workout and returns the "uris" string needed to add to playlist
-   * Takes workout: List[Int], songs: List[Song]
-   * Returns String
-   */
-  def matchSongs(workout: List[Int], songs: List[Song]): String = {
+  override def matchSongs(workout: List[Int], songs: List[Song]): String = {
     def getClosestSong(interval: Int, songs: List[Song]): Song = {
       songs.minBy(s => Math.abs(s.duration - interval))
     }
@@ -146,71 +95,41 @@ object ApiUtils {
     matchSongsHelper(workout, songs, "").stripSuffix(",")
   }
 
-  /* Makes a playlist for the user
-   * Takes userID: String (the user's ID), accessToken: String (the user's access token)
-   * Returns String (the playlist ID)
-   */
-  def makeUserPlaylist(userID: String, accessToken: String): String = {
-    // Set up the request
-    val header = Map("Authorization" -> s"Bearer $accessToken", "Content-Type" -> "application/json")
+  override def makeUserPlaylist(userID: String, accessToken: String): String = {
+    // For the name of the playlist, get the current date and time
+    val now = LocalDateTime.now()
+    val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm")
+    val formattedDateTime = now.format(formatter)
+
+    val headers = Map("Authorization" -> s"Bearer $accessToken", "Content-Type" -> "application/json")
     val body = Json.obj(
-      "name" -> "HiitBeats Workout",
+      "name" -> s"HiitBeats Workout $formattedDateTime",
       "description" -> "Playlist for your HIIT workout",
-      "public" -> false // private playlist
+      "public" -> false
     ).toString()
 
     val uri = uri"https://api.spotify.com/v1/users/$userID/playlists"
-    val backend = HttpClientSyncBackend()
-
-    // Send the request
-    val response = basicRequest
-      .post(uri)
-      .headers(header)
-      .body(body) // Use body, not params, for POST
-      .send(backend)
-    
-    backend.close()
-
-    // Parse the response
-    val jsonString = response.body match {
-      case Left(value) => value
-      case Right(value) => value
-    }
-    val json = Json.parse(jsonString)
-
-    // Extract the playlist ID from the response
-    val playlistID: Option[String] = (json \ "id").asOpt[String]
-
-    playlistID match {
-      case Some(id) => id
-      case None => "Error"
-    }
+    val response = makeRequest(uri, headers, Some(body)).get
+    val json = parseJson(response)
+    (json \ "id").asOpt[String].getOrElse("Error")
   }
 
-  /* Adds songs to a playlist
-   * Takes playlistID: String, accessToken: String (the user's access token), uris: String
-   * Returns Unit
-   */
-  def addSongsToPlaylist(playlistID: String, accessToken: String, uris: String): Unit = {
-    // Set up the request
-    val header = Map("Authorization" -> s"Bearer $accessToken")
-    val params = Map("uris" -> uris)
-    val uriWithParams: Uri = uri"https://api.spotify.com/v1/playlists/$playlistID/tracks"
-      .params(params)
-    val backend = HttpClientSyncBackend()
-    
-    // Send the request
-    val response = basicRequest
-      .post(uriWithParams)
-      .headers(header)
-      .send(backend)
-    backend.close()
+  override def addSongsToPlaylist(playlistID: String, accessToken: String, uris: String): Unit = {
+    val headers = Map(
+      "Authorization" -> s"Bearer $accessToken",
+      "Content-Type" -> "application/json"
+    )
+    val uriList = uris.split(",").toList
+    val body = Json.obj(
+      "uris" -> uriList
+    ).toString()
+    val uri = uri"https://api.spotify.com/v1/playlists/$playlistID/tracks"
 
-    // See if the request was successful
-    if (response.code.isSuccess) {
-      println("Playlist created successfully!")
+    val response = makeRequest(uri, headers, Some(body)).get
+    if (response.nonEmpty) {
+      println("Playlist updated successfully!")
     } else {
-      println("Failed to create playlist: " + response.body)
+      println("Failed to add songs to the playlist.")
     }
   }
 }

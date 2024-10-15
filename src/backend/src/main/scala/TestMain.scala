@@ -2,45 +2,47 @@ package HiitBeats
 
 import java.net.URLEncoder
 import scala.io.StdIn.readLine
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 object TestMain extends App {
   // Log the user in and get the access token
-  val loginLink = LoginApi.getLoginLink
-  val authCode = LoginApi.getAuthCode(loginLink)
-  val accessToken = LoginApi.exchangeAuthCodeForToken(authCode)
-  println(s"\nAccess Token: $accessToken")
+  val loginLink: String = LoginApi.getLoginLink
+  val authCode: String = LoginApi.getAuthCode(loginLink)
+  val accessToken: String = LoginApi.exchangeAuthCodeForToken(authCode)
 
   // Get the user ID
-  val userID = LoginApi.getUserID(accessToken)
+  val userID: String = LoginApi.getUserID(accessToken)
 
   // Get user workout data
   println("Enter your total workout length: ")
-  val workoutLength = readLine().toInt
+  val workoutLength: Int = readLine().toInt
 
   println("Enter your active period length: ")
-  val activeLength = readLine().toInt
+  val activeLength: Int = readLine().toInt
 
   println("Enter your rest period length: ")
-  val restLength = readLine().toInt
+  val restLength: Int = readLine().toInt
 
-  val workout = ApiUtils.fillWorkout(activeLength, restLength, workoutLength)
+  val workout: List[Int] = ApiUtils.fillWorkout(activeLength, restLength, workoutLength)
 
   // Get the client Token
-  val clientToken = ApiUtils.getClientToken match {
+  val clientToken: String = ApiUtils.getClientToken match {
     case Success(value) => value
     case Failure(exception) => throw exception
   }
 
+  // Get the workout songs query
+  println("Enter your songs search query: ")
+  val songsQuery: String = readLine().toString
+
   // Find songs
-  val songs = ApiUtils.findSongs(clientToken)
+  val songs: List[Song] = ApiUtils.findSongs(clientToken, songsQuery)
 
   // Match songs to workout
-  val uriString = ApiUtils.matchSongs(workout, songs)
+  val uriString: String = ApiUtils.matchSongs(workout, songs)
 
   // TODO: Add the playlist to the user's account
-  val playlistID = ApiUtils.makeUserPlaylist(userID, accessToken)
-  println(s"Playlist ID: $playlistID")
+  val playlistID: String = ApiUtils.makeUserPlaylist(userID, accessToken)
 
   // Add the songs to the Playlist
   ApiUtils.addSongsToPlaylist(playlistID, accessToken, uriString)
