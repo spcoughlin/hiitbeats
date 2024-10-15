@@ -1,3 +1,0 @@
-48b8ea2b379e44a282b0b88c6adaecf8
-e88576d176ff4da3bfe7e17ea30e6719
-http://localhost:9000/callback

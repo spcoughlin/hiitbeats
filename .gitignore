@@ -163,11 +163,11 @@ cython_debug/
 
 
 # ----- HIITBeats Specific -----
-src/backend/api_creds.json
-src/backend/project/
-src/backend/target/
+.bsp/
 .metals/
 .scala-build/
-.bsp/
 src/backend/.bloop/
 src/backend/.metals/
+src/backend/api_creds.txt
+src/backend/project/
+src/backend/target/
