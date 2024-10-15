@@ -1,30 +1,48 @@
 package HiitBeats
 
-import scala.util.{Try, Success, Failure}
-import scala.concurrent.ExecutionContext
-import cats.effect.{IO, IOApp, ExitCode}
+import java.net.URLEncoder
+import scala.io.StdIn.readLine
+import scala.util.{Failure, Success}
 
-object TestMain extends IOApp {
-  def run(args: List[String]): IO[ExitCode] = {
-    implicit val ec: ExecutionContext = ExecutionContext.global
+object TestMain extends App {
+  // Log the user in and get the access token
+  val loginLink = LoginApi.getLoginLink
+  val authCode = LoginApi.getAuthCode(loginLink)
+  val accessToken = LoginApi.exchangeAuthCodeForToken(authCode)
+  println(s"\nAccess Token: $accessToken")
 
-    // Step 1: Get the login link for the user to log in
-    val loginLink = ApiUtils.getLoginLink()
+  // Get the user ID
+  val userID = LoginApi.getUserID(accessToken)
 
-    // Step 2: Log in the user, get the auth code
-    val authCodeFuture = ApiUtils.getAuthCode(loginLink)
+  // Get user workout data
+  println("Enter your total workout length: ")
+  val workoutLength = readLine().toInt
 
-    // Step 3: Once the auth code is received, exchange it for an access token
-    authCodeFuture.onComplete {
-      case scala.util.Success(authCode) =>
-        println(s"Authorization Code received: $authCode")
+  println("Enter your active period length: ")
+  val activeLength = readLine().toInt
 
-        // Exchange the auth code for an access token
-        val accessToken = ApiUtils.exchangeAuthCodeForToken(authCode)
-        println(s"Access Token: $accessToken")
+  println("Enter your rest period length: ")
+  val restLength = readLine().toInt
 
-      case scala.util.Failure(ex) =>
-        println(s"Failed to get authorization code: ${ex.getMessage}")
-    }
+  val workout = ApiUtils.fillWorkout(activeLength, restLength, workoutLength)
+
+  // Get the client Token
+  val clientToken = ApiUtils.getClientToken match {
+    case Success(value) => value
+    case Failure(exception) => throw exception
   }
+
+  // Find songs
+  val songs = ApiUtils.findSongs(clientToken)
+
+  // Match songs to workout
+  val uriString = ApiUtils.matchSongs(workout, songs)
+
+  // TODO: Add the playlist to the user's account
+  val playlistID = ApiUtils.makeUserPlaylist(userID, accessToken)
+  println(s"Playlist ID: $playlistID")
+
+  // Add the songs to the Playlist
+  ApiUtils.addSongsToPlaylist(playlistID, accessToken, uriString)
 }
+
