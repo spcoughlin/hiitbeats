@@ -7,7 +7,6 @@ scalaVersion := "2.13.12"
 lazy val example = project.in(file("."))
   .settings(
     libraryDependencies ++= Seq(
-	  // Cats Effect for functional programming
 	  "org.typelevel" %% "cats-effect" % "3.5.1",
 
 	  // Http4s for building HTTP servers and routes using Ember

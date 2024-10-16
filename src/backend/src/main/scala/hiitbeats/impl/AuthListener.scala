@@ -1,9 +1,13 @@
-package HiitBeats
+package hiitbeats.impl
 
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 import java.net.InetSocketAddress
 import scala.concurrent.Promise
 
+
+/**
+ * A simple HTTP server that listens for the authorization code from the Spotify API.
+ */
 object AuthListener {
   def startServer(authCodePromise: Promise[String]): Unit = {
     val server = HttpServer.create(new InetSocketAddress(9000), 0)
