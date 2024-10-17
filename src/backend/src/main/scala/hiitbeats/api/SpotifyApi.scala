@@ -2,6 +2,7 @@ package hiitbeats.api
 
 import scala.util.Try
 import hiitbeats.models.Song
+import hiitbeats.models.Playlist
 
 /**
  * An abstract class defining the Spotify API interface.
@@ -32,7 +33,24 @@ abstract class SpotifyApi extends BaseApi {
    * @param query The search query.
    * @return A list of `Song` objects.
    */
-  def findSongs(token: String, query: String): List[Song]
+  def songSearch(token: String, query: String): List[Song]
+
+  /**
+   * Gets the user's top 5 playlists.
+   *
+   * @param token The user's access token.
+   * @return A list of Playlist objects. 
+   */
+  def getTop5Playlists(token: String): List[Playlist]
+
+  /**
+   * Gets songs from a playlist.
+   *
+   * @param token      The user's access token.
+   * @param playlistID The playlist ID.
+   * @return A list of `Song` objects.
+   */
+  def songsFromPlaylist(token: String, playlistID: String): List[Song]
 
   /**
    * Matches songs to workout intervals.

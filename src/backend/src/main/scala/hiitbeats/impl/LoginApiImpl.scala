@@ -19,7 +19,7 @@ object LoginApiImpl extends LoginApi {
   private val redirectUri = creds("redirectUri")
 
   override def getLoginLink: String = {
-    val scopes = "user-read-private user-read-email playlist-modify-private playlist-modify-public"
+    val scopes = "user-read-private user-read-email playlist-modify-private playlist-modify-public playlist-read-private"
     val state = "no-crossrefs"
     s"https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=$scopes&state=$state"
   }
