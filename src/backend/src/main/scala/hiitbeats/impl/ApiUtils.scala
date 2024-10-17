@@ -15,22 +15,6 @@ import sttp.client4._
 
 object ApiUtils extends SpotifyApi {
 
-  override def getClientToken: Try[String] = Try {
-    val creds = getCredentials("/Users/seancoughlin/projects/hiitbeats/src/backend/api_creds.txt")
-    val clientId = creds("clientId")
-    val clientSecret = creds("clientSecret")
-    val base64Auth = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes("UTF-8"))
-    val headers = Map(
-      "Authorization" -> s"Basic $base64Auth",
-      "Content-Type"  -> "application/x-www-form-urlencoded"
-    )
-    val body = "grant_type=client_credentials"
-
-    val response = makeRequest(uri"https://accounts.spotify.com/api/token", headers, Some(body), method = "POST").get
-    val json = parseJson(response)
-    (json \ "access_token").as[String]
-  }
-
   override def songSearch(token: String, query: String): List[Song] = {
     val headers = Map("Authorization" -> s"Bearer $token")
     val params = Map("q" -> query, "limit" -> "50", "type" -> "track")
@@ -78,9 +62,9 @@ object ApiUtils extends SpotifyApi {
     songs1 ++ songs2
   }
 
-  override def getTop5Playlists(token: String): List[Playlist] = {
+  override def getTop50Playlists(token: String): List[Playlist] = {
     val headers = Map("Authorization" -> s"Bearer $token")
-    val params = Map("limit" -> "5")
+    val params = Map("limit" -> "50")
     val uri = uri"https://api.spotify.com/v1/me/playlists".params(params)
 
     val response = makeRequest(uri, headers, method = "GET").get

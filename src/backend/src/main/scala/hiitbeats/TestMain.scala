@@ -30,7 +30,7 @@ object TestMain extends App {
   val workout: List[Int] = ApiUtils.fillWorkout(activeLength, restLength, workoutLength)
 
   // Get the client token
-  val clientToken: String = ApiUtils.getClientToken match {
+  val clientToken: String = LoginApiImpl.getClientToken match {
     case Success(value)     => value
     case Failure(exception) => throw exception
   }
@@ -48,11 +48,11 @@ object TestMain extends App {
       val songsQuery: String = readLine()
 
       // Find songs
-      ApiUtils.songSearch(clientToken, songsQuery)
+      ApiUtils.songSearch(accessToken, songsQuery)
 
     case "2" =>
       // Get user's top 5 playlists
-      val playlists: List[Playlist] = ApiUtils.getTop5Playlists(accessToken)
+      val playlists: List[Playlist] = ApiUtils.getTop50Playlists(accessToken)
 
       if (playlists.isEmpty) {
         println("No playlists found. Exiting.")
@@ -66,7 +66,7 @@ object TestMain extends App {
       }
 
       // Ask the user to choose a playlist
-      println("Enter the number of the playlist you want to use (1-5): ")
+      println("Enter the number of the playlist you want to use: ")
       val playlistChoice: Int = readLine().toIntOption match {
         case Some(num) if num >= 1 && num <= playlists.length => num
         case _ =>

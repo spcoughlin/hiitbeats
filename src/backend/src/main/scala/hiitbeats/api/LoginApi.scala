@@ -1,9 +1,19 @@
 package hiitbeats.api
 
+import scala.util.Try
+
 /**
  * An abstract class defining the interface for logging into the Spotify API.
  */
 abstract class LoginApi extends BaseApi {
+
+  /**
+   * Gets the client token from Spotify API.
+   *
+   * @return A `Try[String]` containing the client token.
+   */
+  def getClientToken: Try[String]
+
 
   /**
    * Returns the login link for the user to log in.

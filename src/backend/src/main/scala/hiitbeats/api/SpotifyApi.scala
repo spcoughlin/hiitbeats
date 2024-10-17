@@ -10,13 +10,6 @@ import hiitbeats.models.Playlist
 abstract class SpotifyApi extends BaseApi {
 
   /**
-   * Gets the client token from Spotify API.
-   *
-   * @return A `Try[String]` containing the client token.
-   */
-  def getClientToken: Try[String]
-
-  /**
    * Fills a workout with intervals and rest periods.
    *
    * @param intLength   The length of the interval in minutes.
@@ -29,19 +22,19 @@ abstract class SpotifyApi extends BaseApi {
   /**
    * Finds songs from Spotify API.
    *
-   * @param token The client token.
+   * @param token The user's access token.
    * @param query The search query.
    * @return A list of `Song` objects.
    */
   def songSearch(token: String, query: String): List[Song]
 
   /**
-   * Gets the user's top 5 playlists.
+   * Gets the user's top 50 playlists.
    *
    * @param token The user's access token.
    * @return A list of Playlist objects. 
    */
-  def getTop5Playlists(token: String): List[Playlist]
+  def getTop50Playlists(token: String): List[Playlist]
 
   /**
    * Gets songs from a playlist.

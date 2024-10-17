@@ -18,6 +18,19 @@ object LoginApiImpl extends LoginApi {
   private val clientSecret = creds("clientSecret")
   private val redirectUri = creds("redirectUri")
 
+  override def getClientToken: Try[String] = Try {
+    val base64Auth = Base64.getEncoder.encodeToString(s"$clientId:$clientSecret".getBytes("UTF-8"))
+    val headers = Map(
+      "Authorization" -> s"Basic $base64Auth",
+      "Content-Type"  -> "application/x-www-form-urlencoded"
+    )
+    val body = "grant_type=client_credentials"
+
+    val response = makeRequest(uri"https://accounts.spotify.com/api/token", headers, Some(body), method = "POST").get
+    val json = parseJson(response)
+    (json \ "access_token").as[String]
+  }
+
   override def getLoginLink: String = {
     val scopes = "user-read-private user-read-email playlist-modify-private playlist-modify-public playlist-read-private"
     val state = "no-crossrefs"
