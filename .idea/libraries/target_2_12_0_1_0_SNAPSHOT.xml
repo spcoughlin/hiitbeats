@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="target_2.12-0.1.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/backend/src/main/scala/target/target/scala-2.12/target_2.12-0.1.0-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

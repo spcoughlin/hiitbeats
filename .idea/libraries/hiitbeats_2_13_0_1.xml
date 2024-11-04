@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="hiitbeats_2.13-0.1">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/backend/target/scala-2.13/hiitbeats_2.13-0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

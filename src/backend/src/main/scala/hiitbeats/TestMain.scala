@@ -17,6 +17,8 @@ object TestMain extends App {
   // Get the user ID
   val userID: String = LoginApiImpl.getUserID(accessToken)
 
+  println(s"Logged in as user $userID")
+
   // Get user workout data
   println("Enter your total workout length (in minutes): ")
   val workoutLength: Int = readLine().toInt

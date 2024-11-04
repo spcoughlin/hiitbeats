@@ -1,0 +1,23 @@
+.App {
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  background-color: #282c34;
+}
+
+.login-button {
+  padding: 15px 30px;
+  font-size: 18px;
+  color: #fff;
+  background-color: #1db954;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-button:hover {
+  background-color: #1ed760;
+}
+
