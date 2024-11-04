@@ -2,11 +2,14 @@ package hiitbeats
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.model.StatusCodes
-import scala.io.StdIn
-import hiitbeats.impl.LoginApiImpl
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives._
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import ch.megard.akka.http.cors.scaladsl.model.HttpOriginMatcher
+import hiitbeats.impl.LoginApiImpl
+import scala.io.StdIn
 import spray.json.DefaultJsonProtocol._
 
 object RestApiApp {
@@ -31,8 +34,13 @@ object RestApiApp {
     case class MessageResponse(message: String)
     implicit val messageResponseFormat = jsonFormat1(MessageResponse)
 
+    // Configure CORS settings
+    val corsSettings = CorsSettings.defaultSettings.withAllowedOrigins(
+      HttpOriginMatcher("http://localhost:3000") // Allow requests from your React app
+    )
+
     // Define the route
-    val route =
+    val route = cors(corsSettings) {
       logRequestResult("Server") {
         path("login-link") {
           get {
@@ -68,6 +76,7 @@ object RestApiApp {
           }
         }
       }
+    }
 
     // Start the server
     val bindingFuture = Http().newServerAt("localhost", 9000).bind(route)

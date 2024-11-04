@@ -1,11 +1,14 @@
 package hiitbeats.api
 
+import java.nio.file.{Files, Paths}
 import play.api.libs.json._
+import scala.io.Source
+import scala.io.Source
+import scala.util.Try
 import sttp.client4._
 import sttp.client4.httpclient.HttpClientSyncBackend
 import sttp.model.Uri
-import scala.io.Source
-import scala.util.Try
+
 
 /**
  * Base API class containing shared methods for API interactions.
@@ -53,21 +56,36 @@ abstract class BaseApi {
   }
 
   /**
-   * Retrieves credentials from a file.
-   *
-   * @param filePath The path to the credentials file.
-   * @return A `Map[String, String]` containing the credentials.
-   */
+    * Retrieves credentials from a file.
+    *
+    * @param filePath The path to the credentials file, with `~` optionally representing the home directory.
+    * @return A `Map[String, String]` containing the credentials.
+    */
   def getCredentials(filePath: String): Map[String, String] = {
-    val lines = Source.fromFile(filePath).getLines().toArray
-    Source.fromFile(filePath).close()
-    Map(
-      "clientId"     -> lines(0),
-      "clientSecret" -> lines(1),
-      "redirectUri"  -> lines(2)
-    )
-  }
+    // Expand '~' to the user's home directory
+    val expandedPath = if (filePath.startsWith("~")) {
+      Paths.get(System.getProperty("user.home"), filePath.drop(1)).toString
+    } else {
+      filePath
+    }
 
+    // Check if the file exists
+    if (Files.exists(Paths.get(expandedPath))) {
+      val source = Source.fromFile(expandedPath)
+      try {
+        val lines = source.getLines().toArray
+        Map(
+          "clientId"     -> lines(0),
+          "clientSecret" -> lines(1),
+          "redirectUri"  -> lines(2)
+        )
+      } finally {
+        source.close()
+      }
+    } else {
+      throw new java.io.FileNotFoundException(s"File not found at path: $expandedPath")
+    }
+  }
   /**
    * Parses a JSON string into a `JsValue`.
    *

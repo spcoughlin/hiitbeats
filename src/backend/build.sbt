@@ -13,11 +13,12 @@ lazy val example = project.in(file("."))
 	  "org.http4s" %% "http4s-ember-server" % "0.23.18",
 	  "org.scala-lang" % "scala-library" % "2.13.12",
 	  "org.typelevel" %% "cats-effect" % "3.5.1",
+      "ch.megard" %% "akka-http-cors" % "1.1.3",
       "com.comcast" %% "ip4s-core" % "3.2.0",
       "com.typesafe.akka" %% "akka-actor-typed"     % "2.6.20",
       "com.typesafe.akka" %% "akka-http"            % "10.2.10",
-      "com.typesafe.akka" %% "akka-stream"          % "2.6.20",
       "com.typesafe.akka" %% "akka-http-spray-json" % "10.2.10",
+      "com.typesafe.akka" %% "akka-stream"          % "2.6.20",
       "io.spray"          %% "spray-json"           % "1.3.6",
       "org.scalatest" %% "scalatest" % "3.2.16" % Test 
     ),

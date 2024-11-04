@@ -13,7 +13,7 @@ import sttp.client4.UriContext
 object LoginApiImpl extends LoginApi {
 
   // Use getCredentials from BaseApi
-  private val creds = getCredentials("/Users/seancoughlin/projects/hiitbeats/src/backend/api_creds.txt")
+  private val creds = getCredentials("~/projects/hiitbeats/src/backend/api_creds.txt")
   private val clientId = creds("clientId")
   private val clientSecret = creds("clientSecret")
   private val redirectUri = creds("redirectUri")
